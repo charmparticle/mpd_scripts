@@ -1,0 +1,31 @@
+#!/bin/bash
+echo "press k to increase volume."
+echo "press j to decrease volume."
+echo "press q to quit."
+echo
+
+function changeVolume()
+{
+	  local vol
+    vol="$(mpc volume "$1" | grep volume | cut -c 1-13)"
+    echo -ne "\r$vol"
+}
+
+while true
+do
+    volume="$(mpc volume | grep -o '[0-9]*')"
+    read -n 1 key
+    if [[ "$key" == "j" ]]
+    then
+        ((volume--))
+    elif [[ "$key" == "k" ]]
+    then
+        ((volume++))
+    elif [[ "$key" == 'q' ]]
+    then
+        echo
+        exit 0
+    fi
+    changeVolume "$volume"
+done
+

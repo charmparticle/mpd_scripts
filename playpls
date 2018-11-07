@@ -1,0 +1,40 @@
+#!/bin/bash
+[[ -d ~/tunes ]] || echo "no tunes folder. Try running update-radio first"
+play()
+{
+	echo "play"
+	radio="$(grep -o 'http[^\[<> ]*$' ~/tunes/$tune | sed 's#/;##g' | sed 's/\r//g')"
+	if [[ "$0" =~ playpls ]]
+	then
+		mpc clear
+	fi
+	mpc add $radio
+	mpc play
+}
+
+if [[ $# -eq 0 ]]
+then
+	ls ~/tunes
+else
+	if [[ "$1" == '-h' ]] || [[ "$1" == '--help' ]]
+	then
+		echo "usage:
+$0 -- list playlist files
+$0 <partial name of playlist file> -- add and play a playlist file
+$0 -h -- this help text"
+		exit
+	fi
+	matches=$(ls ~/tunes | grep -i "$1")
+	matchcount=$(echo "$matches" | wc -l)
+	if [[ "$matchcount" -gt 1 ]]
+	then
+		tune="$(echo "$matches" | slmenu)"
+	elif [[ "$matchcount" == 1 ]] && [[ "$matches" != "~/tunes" ]] && [[ "$matches" != "" ]]
+	then
+		tune="$matches"
+	else
+		echo "No match found for $1"
+		exit 1
+	fi
+	play "$tune"
+fi
