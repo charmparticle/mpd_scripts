@@ -28,6 +28,7 @@ This script assumes you have your music library laid out with artist names as di
 
 "
 else
+	init
 	mpc clear
 	mpc add "$random_album"
 	mpc play
