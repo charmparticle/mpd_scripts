@@ -1,15 +1,17 @@
 #!/bin/bash
 [[ -d ~/tunes ]] || echo "no tunes folder. Try running update-radio first"
-play()
+add=false
+justshow=false
+
+show_help()
 {
-	echo "play"
-	radio="$(grep -o 'http[^\[<> ]*$' ~/tunes/$tune | sed 's#/;##g' | sed 's/\r//g')"
-	if [[ "$0" =~ playpls ]]
-	then
-		mpc clear
-	fi
-	mpc add $radio
-	mpc play
+	echo "usage:
+$0 <no arguments>  //list playlist files
+$0 <partial name of playlist file>   //clear the playlist, then add and play a playlist file
+$0 -a <partial name of playlist file> //add a playlist file
+$0 -s <partial name of playlist file> //print out the urls in a playlist file
+$0 -h  //this help text"
+	exit
 }
 
 if [[ $# -eq 0 ]]
@@ -18,13 +20,28 @@ then
 else
 	if [[ "$1" == '-h' ]] || [[ "$1" == '--help' ]]
 	then
-		echo "usage:
-$0 -- list playlist files
-$0 <partial name of playlist file> -- add and play a playlist file
-$0 -h -- this help text"
-		exit
+		show_help
+	elif [[ "$1" == '-a' ]] || [[ "$1" == '--add' ]]
+	then
+		if [[ "$2" != "" ]]
+		then
+			add=true
+			matches=$(ls ~/tunes | grep -i "$2")
+		else
+			show_help
+		fi
+	elif [[ "$1" == '-s' ]] || [[ "$1" == '--show' ]]
+	then
+		if [[ "$2" != "" ]]
+		then
+			justshow=true
+			matches=$(ls ~/tunes | grep -i "$2")
+		else
+			show_help
+		fi
 	fi
-	matches=$(ls ~/tunes | grep -i "$1")
+
+	[[ "$matches" == "" ]] && matches=$(ls ~/tunes | grep -i "$1")
 	matchcount=$(echo "$matches" | wc -l)
 	if [[ "$matchcount" -gt 1 ]]
 	then
@@ -36,5 +53,17 @@ $0 -h -- this help text"
 		echo "No match found for $1"
 		exit 1
 	fi
-	play "$tune"
+	radio="$(grep -o 'http[^\[<> ]*$' ~/tunes/"$tune" | sed 's#/;##g' | sed 's/\r//g')"
+	if $justshow
+	then
+		echo "$radio"
+	elif $add
+	then
+		mpc add $radio
+	else
+		mpc clear
+		mpc add $radio
+		mpc play
+	fi
 fi
+
