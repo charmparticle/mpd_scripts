@@ -1,7 +1,32 @@
 #!/bin/bash
+add=false
+show=false
+invalid=false
+
+show_help(){
+	echo "usage:
+$0  with no arguments, adds and plays a random album from your music library.
+$0 -a  adds an album to the playlist
+$0 -s  chooses a randum album and outputs it. You can add this album with mpc if you wish, by copying and pasting.
+$0 -t \$artist adds a random album by \$artist
+$0 -h  shows this help message.
+"
+exit 0
+}
+
 init(){
-	random_artist="$(mpc ls | shuf --random-source=/dev/urandom | head -1)" 
-	random_album="$(mpc ls "$random_artist" | shuf --random-source=/dev/urandom | head -1)" 
+	if [[ "$random_artist" == "" ]]
+	then
+		random_artist="$(mpc ls | shuf | head -1)" 
+	fi
+	if mpc ls "$random_artist" >/dev/null 2>&1
+	then
+		true
+	else
+		echo "Invalid artist: $random_artist"
+		exit 1
+	fi
+	random_album="$(mpc ls "$random_artist" | shuf | head -1)" 
 	if [[ "$random_album" == "" ]]
 	then
 		random_album="$random_artist"
@@ -9,27 +34,41 @@ init(){
 	echo "$random_album"
 }
 
-if [[ "$1" == "-a" ]]
-then
-	init
-	mpc add "$random_album"
-elif [[ "$1" == "-s" ]]
-then
-	init
-elif [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]
-then
-	echo "usage:
-$0  with no arguments, adds and plays a random album from your music library.
-$0 -a  adds an album to the playlist
-$0 -s  chooses a randum album and outputs it. You can add this album with mpc if you wish
-$0 -h  shows this help message.
-
-This script assumes you have your music library laid out with artist names as directories, and album names as subdirectories containing music files.
-
-"
-else
-	init
+play(){
 	mpc clear
 	mpc add "$random_album"
 	mpc play
-fi
+}
+
+main(){
+	$invalid && show_help
+	if $add
+	then
+		init
+		mpc add "$random_album"
+	elif $show
+	then
+		init
+	else
+		init
+		play
+	fi
+	exit
+}
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		-a) add=true; shift 1;;
+		--add) add=true; shift 1;;
+		-t) [[ "$#" -gt 1 ]] && random_artist="$2" || invalid=true; shift 2;;
+		--artist) [[ "$#" -gt 1 ]] && random_artist="$2" || invalid=true; shift 2;;
+		-s) show=true; shift 1;;
+		--show) show=true; shift 1;;
+		-h) show_help; shift 1;;
+		--help) show_help; shift 1;;
+		-*) invalid=true; shift 1;;
+		*) invalid=true; shift 1;;
+	esac
+done
+
+main
