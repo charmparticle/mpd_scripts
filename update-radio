@@ -2,23 +2,23 @@
 [[ -e ~/tunes ]] || mkdir ~/tunes
 while read station
 do
-	url=$(echo "$station" | cut -d ' ' -f 2)
-	file_name=$(echo "$station" | cut -d ' ' -f 1)
-	if [[ -e ~/tunes/$file_name ]]
-	then
-		url_sha=$(curl -sL "$url" | tr -d '\r' | shasum | cut -d ' ' -f 1)
-		file_sha=$(cat ~/tunes/$file_name | shasum | cut -d ' ' -f 1)
-		if [[ "$url_sha" == "$file_sha" ]]
-		then
-			echo "$file_name is up-to-date"
-		else
-			echo "updating $file_name"
-			cd ~/tunes
-			curl -sL "$url" | tr -d '\r' > "$file_name"
-		fi
-	else
-		echo "getting $file_name"
-		cd ~/tunes
-		curl -sL "$url" | tr -d '\r' > "$file_name"
-	fi
+  url=$(echo "$station" | cut -d ' ' -f 2)
+  file_name=$(echo "$station" | cut -d ' ' -f 1)
+  if [[ -e ~/tunes/$file_name ]]
+  then
+    url_sha=$(curl -sL "$url" | tr -d '\r' | shasum | cut -d ' ' -f 1)
+    file_sha=$(cat ~/tunes/$file_name | shasum | cut -d ' ' -f 1)
+    if [[ "$url_sha" == "$file_sha" ]]
+    then
+      echo "$file_name is up-to-date"
+    else
+      echo "updating $file_name"
+      cd ~/tunes
+      curl -sL "$url" | tr -d '\r' > "$file_name"
+    fi
+  else
+    echo "getting $file_name"
+    cd ~/tunes
+    curl -sL "$url" | tr -d '\r' > "$file_name"
+  fi
 done < ~/.radio-station-urls

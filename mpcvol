@@ -6,7 +6,7 @@ echo
 
 function changeVolume()
 {
-	  local vol
+    local vol
     vol="$(mpc volume "$1" | grep volume | cut -c 1-13)"
     echo -ne "\r$vol"
 }
