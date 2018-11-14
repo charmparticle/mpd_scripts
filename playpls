@@ -1,7 +1,11 @@
 #!/bin/bash
-[[ -d ~/tunes ]] || echo "no tunes folder. Try running update-radio first"
+radiodir="$HOME/tunes"
+[[ -d "$radiodir" ]] || echo "no tunes folder. Try running update-radio first"
+
 add=false
 justshow=false
+test=false
+searchterm=""
 
 show_help()
 {
@@ -9,61 +13,163 @@ show_help()
 $0 <no arguments>  //list playlist files
 $0 <partial name of playlist file>   //clear the playlist, then add and play a playlist file
 $0 -a <partial name of playlist file> //add a playlist file
+$0 --add <partial name of playlist file> //add a playlist file
 $0 -s <partial name of playlist file> //print out the urls in a playlist file
+$0 --show <partial name of playlist file> //print out the urls in a playlist file
+$0 -c <partial name of playlist file> //test if urls in the playlist file are valid
+$0 --test <partial name of playlist file> //test if urls in the playlist file are valid
 $0 -h  //this help text"
   exit
 }
 
-if [[ $# -eq 0 ]]
-then
-  ls ~/tunes
-else
-  if [[ "$1" == '-h' ]] || [[ "$1" == '--help' ]]
-  then
-    show_help
-  elif [[ "$1" == '-a' ]] || [[ "$1" == '--add' ]]
-  then
-    if [[ "$2" != "" ]]
+test_radio()
+{
+  local e=""
+  local c=0
+  local i=0
+  local radios=$@
+  for radio in $radios
+  do
+    xxx=$(pwgen -N 1 -s 5)
+    #this is the common idiom for finding the PID of a subshell without using a bash4 specific feature.
+    ( : ; echo $PPID > /tmp/curl_$xxx.pid; curl -r 0-1024 "$radio" 1>/tmp/curl_$xxx.out 2>/dev/null) &
+    sleep 1
+    kill $(cat /tmp/curl_$xxx.pid) 2>/dev/null
+    if ffprobe /tmp/curl_$xxx.out 2>&1 | tail -1 | grep -q Audio
     then
-      add=true
-      matches=$(ls ~/tunes | grep -i "$2")
+      ((c++))
     else
-      show_help
+      if [[ "$e" == "" ]]
+      then
+        e="$i"
+      else
+        e="$e $i"
+      fi
     fi
-  elif [[ "$1" == '-s' ]] || [[ "$1" == '--show' ]]
+    rm /tmp/curl_$xxx.pid
+    rm /tmp/curl_$xxx.out
+    ((i++))
+  done
+  if [ "$c" -eq "$i" ]
   then
-    if [[ "$2" != "" ]]
-    then
-      justshow=true
-      matches=$(ls ~/tunes | grep -i "$2")
-    else
-      show_help
-    fi
-  fi
-
-  [[ "$matches" == "" ]] && matches=$(ls ~/tunes | grep -i "$1")
-  matchcount=$(echo "$matches" | wc -l)
-  if [[ "$matchcount" -gt 1 ]]
-  then
-    tune="$(echo "$matches" | slmenu)"
-  elif [[ "$matchcount" == 1 ]] && [[ "$matches" != "~/tunes" ]] && [[ "$matches" != "" ]]
-  then
-    tune="$matches"
+    echo "$pls is up and running"
+    exit 0
   else
-    echo "No match found for $1"
+    echo "in $pls:"
+    for i in $e
+    do
+      echo "${radio[$i]} is broken"
+    done
     exit 1
   fi
-  radio="$(grep -o 'http[^\[<> ]*$' ~/tunes/"$tune" | sed 's#/;##g' | sed 's/\r//g')"
-  if $justshow
+}
+
+play()
+{
+  pls="$1"
+  local radio="$(grep -o 'http[^\[<> ]*$' "$radiodir"/"$pls" 2>/dev/null | sed 's#/;##g' | tr -d '\r')"
+  if [[ "$radio" != "" ]]
   then
-    echo "$radio"
-  elif $add
-  then
-    mpc add $radio
+    if $test
+    then
+      test_radio "$radio"
+    elif $justshow
+    then
+      echo "$radio"
+    elif $add
+    then
+      mpc add $radio
+    else
+      mpc clear
+      mpc add $radio
+      mpc play
+    fi
   else
-    mpc clear
-    mpc add $radio
-    mpc play
+    echo -e "\"$pls\" was empty.\n"
+    exit 1
+  fi
+}
+
+get_tune()
+{
+  local matches="$@"
+  local matchcount=$(echo "$matches" | wc -l)
+  if [[ "$matchcount" -gt 1 ]]
+  then
+    local tune="$(echo "$matches" | slmenu)"
+  elif [[ "$matchcount" == 1 ]]
+  then
+    local tune="$matches"
+  fi
+  if [[ "$tune" == "" ]]
+  then
+    #this almost certainly means the user hit ctr-c
+    #while in slmenu
+    echo -e "Bye.\n"
+    exit 0
+  fi
+  play "$tune"
+}
+
+start()
+{
+if [[ "$searchterm" == "" ]]
+then
+  ls "$radiodir"
+else
+  local m=$(ls "$radiodir" | grep -i "$searchterm")
+  if [[ "$m" != "" ]]
+  then
+    get_tune "$m"
+  else
+    echo "No match found for \"$searchterm\"".
+    exit 1
   fi
 fi
+}
 
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -a) 
+        add=true
+        shift 1
+        ;;
+    -add) 
+        add=true
+        shift 1
+        ;;
+    -s)
+        justshow=true
+        shift 1
+        ;;
+    --show)
+        justshow=true
+        shift 1
+        ;;
+    -c)
+        test=true
+        shift 1
+        ;;
+    --test)
+        test=true
+        shift 1
+        ;;
+    -h)
+        show_help
+        shift 1
+        ;;
+    --help)
+        show_help
+        shift 1
+        ;;
+    -*)
+        invalid=true
+        shift 1
+        ;;
+    *) searchterm="$1"
+       shift 1
+       ;;
+  esac
+done
+
+start
