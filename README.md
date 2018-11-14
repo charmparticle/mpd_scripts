@@ -50,3 +50,4 @@ some scripts for mpd, the music player daemon:
     #select an album for a random artist, and play it:
     #(uses slmenu, so you need to have that installed to use this feature)
 		$ randalbum --select-album
+
