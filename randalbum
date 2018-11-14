@@ -2,6 +2,9 @@
 add=false
 show=false
 invalid=false
+select_artist=false
+select_album=false
+select_song=false
 
 show_help(){
 	echo "usage:
@@ -17,7 +20,12 @@ exit 0
 init(){
 	if [[ "$random_artist" == "" ]]
 	then
-		random_artist="$(mpc ls | shuf | head -1)" 
+		if $select_artist
+		then
+		  random_artist="$(mpc ls | slmenu -l 1)" 
+		else
+		  random_artist="$(mpc ls | shuf | head -1)" 
+		fi
 	fi
 	if mpc ls "$random_artist" >/dev/null 2>&1
 	then
@@ -26,10 +34,19 @@ init(){
 		echo "Invalid artist: $random_artist"
 		exit 1
 	fi
-	random_album="$(mpc ls "$random_artist" | shuf | head -1)" 
+	if $select_album
+	then
+	  random_album=$(mpc ls "$random_artist" | slmenu -l 1) 
+	else
+	  random_album=$(mpc ls "$random_artist" | shuf | head -1)
+	fi
 	if [[ "$random_album" == "" ]]
 	then
-		random_album="$random_artist"
+		random_album=$random_artist
+	fi
+	if $select_song
+	then
+		random_album=$(mpc ls "$random_album" | slmenu -l 1)
 	fi
 	echo "$random_album"
 }
@@ -58,16 +75,79 @@ main(){
 
 while [ "$#" -gt 0 ]; do
 	case "$1" in
-		-a) add=true; shift 1;;
-		--add) add=true; shift 1;;
-		-t) [[ "$#" -gt 1 ]] && random_artist="$2" || invalid=true; shift 2;;
-		--artist) [[ "$#" -gt 1 ]] && random_artist="$2" || invalid=true; shift 2;;
-		-s) show=true; shift 1;;
-		--show) show=true; shift 1;;
-		-h) show_help; shift 1;;
-		--help) show_help; shift 1;;
-		-*) invalid=true; shift 1;;
-		*) invalid=true; shift 1;;
+		-a) 
+			  add=true
+			  shift 1
+				;;
+	  -add) 
+			  add=true
+			  shift 1
+			  ;;
+		-t)
+			  if [[ "$#" -gt 1 ]]
+			  then
+					random_artist="$2"
+				else
+						invalid=true
+				fi
+			  shift 2
+				;;
+		--artist)
+			  if [[ "$#" -gt 1 ]]
+			  then
+					random_artist="$2"
+				else
+						invalid=true
+				fi
+			  shift 2
+				;;
+		-sg)
+			  select_song=true
+			  shift 1
+				;;
+		--select-song)
+			  select_song=true
+			  shift 1
+				;;
+		-sm)
+			  select_album=true
+			  shift 1
+				;;
+		--select-album)
+			  select_album=true
+			  shift 1
+				;;
+		-st)
+			  select_artist=true
+			  shift 1
+				;;
+		--select-artist)
+			  select_artist=true
+			  shift 1
+				;;
+		-s)
+			  show=true
+				shift 1
+				;;
+		--show)
+			  show=true
+				shift 1
+				;;
+		-h)
+			  show_help
+				shift 1
+				;;
+		--help)
+			  show_help
+				shift 1
+				;;
+		-*)
+			  invalid=true
+				shift 1
+				;;
+		*) invalid=true
+			 shift 1
+			 ;;
 	esac
 done
 
