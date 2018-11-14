@@ -45,9 +45,16 @@ some scripts for mpd, the music player daemon:
     $ randalbum -t "Miles Davis" -s
     #this could be used on conjunction with mpc:
     $ randalbum -t "Miles Davis" -s | mpc add
+    #although, it's faster to juse use the add option
+    $ randalbum -t "Miles Davis" -a
     #play a random album
     $ randalbum
     #select an album for a random artist, and play it:
     #(uses slmenu, so you need to have that installed to use this feature)
     $ randalbum --select-album
+    #select a song from a random album, and play it
+    $ randalbum --select-song
+    #select an artist, then an album, then a song, and print it out
+    #at this point, you might as well use ncmpcpp instead.
+    $ randalbum -st -sm -sg -s
 
