@@ -1,0 +1,155 @@
+#!/bin/bash
+MUSIC=""
+MAXVOL=55
+MUSICDIR=~/Music
+FADEIN_METHOD=logarithmic
+
+show_help()
+{
+  echo "usage:
+$0 -  //accept a music uri from stdin, eg playpls -s kcrw | fadein -.
+$0 -m <integer> //set the volume to <integer>
+$0 --maxvol <integer> //set the volume to <integer>
+$0 -lin  //fade in linearly
+$0 -log  //fade in logarithmically. If both are chosen, logarithmic wins.
+$0 -h  //this help text
+$0 --help  //this help text"
+  exit 0
+}
+
+mksilentmp3()
+{
+  destdir=$1
+  [[ -e "$destdir/5sec.mp3" ]] || ffmpeg -ar 48000 -t 5 -f s16le -acodec pcm_s16le -ac 2 -i /dev/zero -acodec libmp3lame -aq 4 "$destdir/5sec.mp3"
+}
+
+fadein()
+{
+  if [[ "$FADEIN_METHOD" == "logarithmic" ]]
+  then
+    volume=0
+    for i in $(seq 1 $MAXVOL | sort -rn)
+    do
+      ((volume++))
+      mpc volume "$volume" >/dev/null 2>&1
+      t="$(echo "scale=0;(l($i)/l(3))" | bc -l)"
+      echo -ne "$t $volume\r"
+      sleep "$t" 
+    done
+  elif [[ "$FADEIN_METHOD" == "linear" ]]
+  then
+    volume=0
+    for i in $(seq 1 $MAXVOL)
+    do
+      ((volume++))
+      mpc volume "$volume" >/dev/null 2>&1
+      echo -ne "$volume\r"
+      sleep 2 
+    done
+  fi
+}
+
+testsilentmp3()
+{
+  if mpc add 5sec.mp3
+  then
+    test=true
+  else
+    test=false
+  fi
+}
+
+addsilentmp3()
+{
+  testsilentmp3
+  if $test
+  then
+    true
+  else
+    mksilentmp3 "$MUSICDIR"
+    testsilentmp3
+    if $test
+    then
+      true
+    else
+      mksilentmp3 "/tmp"
+      mpc add file:///tmp/5sec.mp3
+    fi
+  fi
+}
+
+main()
+{
+  if [[ "$MUSIC" != "" ]]
+  then
+    addsilentmp3
+    mpc play
+    sleep 1
+    mpc volume 0
+    mpc add $MUSIC 2>/dev/null
+    if [[ "$(mpc playlist | grep -v 5sec.mp3)" != "" ]]
+    then
+      fadein
+    else
+      echo "MPD could not play \"$MUSIC\". Exiting."
+      exit 1
+    fi
+  else
+    show_help
+  fi
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -m) 
+        if [[ "$#" -gt 1 ]]
+        then
+          if [ $2 -eq $2 ]
+          then
+            MAXVOL=$2
+          fi
+        fi
+        shift 2
+        ;;
+    --maxvol) 
+        if [[ "$#" -gt 1 ]]
+        then
+          if [ $2 -eq $2 ]
+          then
+            MAXVOL=$2
+          fi
+        fi
+        shift 2
+        ;;
+    -log) 
+        FADEIN_METHOD=logarithmic
+        shift 1
+        ;;
+    -logarithmic) 
+        FADEIN_METHOD=logarithmic
+        shift 1
+        ;;
+    -lin) 
+        FADEIN_METHOD=linear
+        shift 1
+        ;;
+    -linear) 
+        FADEIN_METHOD=linear
+        shift 1
+        ;;
+    -)
+        MUSIC=$(cat -)
+        shift 1
+        ;;
+    -h)
+        show_help
+        shift 1
+        ;;
+    --help)
+        show_help
+        shift 1
+        ;;
+  esac
+done
+
+main
