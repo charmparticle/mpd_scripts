@@ -58,3 +58,13 @@ some scripts for mpd, the music player daemon:
     #at this point, you might as well use ncmpcpp instead.
     $ randalbum -st -sm -sg -s
 
+**fadein**
+
+Fades in music that's piped in from one of the other scripts or something else.
+
+Examples:
+
+    # fade in a random Brian Eno album, using linear fade-in, to a max volume of 56
+    $ randalbum -t 'Brian Eno' -s | fadein -lin -m 56 -
+    # fade in an internet radio stream, using logarithmic fade-in, to a max volume of 55
+    $ playpls -s e24 | fadein -
