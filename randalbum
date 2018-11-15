@@ -10,8 +10,17 @@ show_help(){
   echo "usage:
 $0  with no arguments, adds and plays a random album from your music library.
 $0 -a  adds an album to the playlist
+$0 --add  adds an album to the playlist
 $0 -s  chooses a randum album and outputs it. You can add this album with mpc if you wish, by copying and pasting.
+$0 --show  chooses a randum album and outputs it. You can add this album with mpc if you wish, by copying and pasting.
 $0 -t \$artist adds a random album by \$artist
+$0 --artist \$artist adds a random album by \$artist
+$0 -st  select an artist using a menu
+$0 --select-artist  select an artist using a menu
+$0 -sm  select an album using a menu
+$0 --select-album  select an album using a menu
+$0 -sg  select an song using a menu
+$0 --select-song  select an song using a menu
 $0 -h  shows this help message.
 "
 exit 0
