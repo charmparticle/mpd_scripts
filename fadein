@@ -11,7 +11,9 @@ $0 -  //accept a music uri from stdin, eg playpls -s kcrw | fadein -.
 $0 -m <integer> //set the volume to <integer>
 $0 --maxvol <integer> //set the volume to <integer>
 $0 -lin  //fade in linearly
+$0 --linearly  //fade in linearly
 $0 -log  //fade in logarithmically. If both are chosen, logarithmic wins.
+$0 --logarithmic  //fade in logarithmically. If both are chosen, logarithmic wins.
 $0 -h  //this help text
 $0 --help  //this help text"
   exit 0
@@ -125,7 +127,7 @@ while [ "$#" -gt 0 ]; do
         FADEIN_METHOD=logarithmic
         shift 1
         ;;
-    -logarithmic) 
+    --logarithmic) 
         FADEIN_METHOD=logarithmic
         shift 1
         ;;
@@ -133,7 +135,7 @@ while [ "$#" -gt 0 ]; do
         FADEIN_METHOD=linear
         shift 1
         ;;
-    -linear) 
+    --linear) 
         FADEIN_METHOD=linear
         shift 1
         ;;
