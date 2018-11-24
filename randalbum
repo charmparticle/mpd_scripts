@@ -31,7 +31,7 @@ init(){
   then
     if $select_artist
     then
-      random_artist="$(mpc ls | slmenu -l 1)" 
+      random_artist="$(mpc ls | slmenu -i -l 1)" 
     else
       random_artist="$(mpc ls | shuf | head -1)" 
     fi
@@ -45,7 +45,7 @@ init(){
   fi
   if $select_album
   then
-    random_album=$(mpc ls "$random_artist" | slmenu -l 1) 
+    random_album=$(mpc ls "$random_artist" | slmenu -i -l 1) 
   else
     random_album=$(mpc ls "$random_artist" | shuf | head -1)
   fi
@@ -55,7 +55,7 @@ init(){
   fi
   if $select_song
   then
-    random_album=$(mpc ls "$random_album" | slmenu -l 1)
+    random_album=$(mpc ls "$random_album" | slmenu -i -l 1)
   fi
   echo "$random_album"
 }
