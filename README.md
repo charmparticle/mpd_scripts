@@ -52,7 +52,8 @@ some scripts for mpd, the music player daemon:
     #select an album for a random artist, and play it:
     #(uses slmenu, so you need to have that installed to use this feature)
     $ randalbum --select-album
-    #select a song from a random album, and play it
+    #select a song from a random album, and play it. This uses slmenu,
+    #and if you type, it will intelligently autocomplete
     $ randalbum --select-song
     #select an artist, then an album, then a song, and print it out
     #at this point, you might as well use ncmpcpp instead.
