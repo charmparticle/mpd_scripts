@@ -1,24 +1,69 @@
 #!/bin/bash
-[[ -e ~/tunes ]] || mkdir ~/tunes
+dir=~/tunes
+
+[[ -e "$dir" ]] || mkdir "$dir"
+
+test_radio()
+{
+  url=$1
+  valid_radio=false
+  xxx=$(pwgen -N 1 -s 5)
+  #this is the common idiom for finding the PID of a subshell without using a bash4 specific feature.
+  ( : ; echo $PPID > /tmp/curl_$xxx.pid; curl "$url" 1>/tmp/curl_$xxx.out 2>/dev/null) &
+  sleep 1
+  kill $(cat /tmp/curl_$xxx.pid) 2>/dev/null
+  sleep .5
+  ffprobe /tmp/curl_$xxx.out 2>&1 | tail -1 | grep -q Audio && valid_radio=true
+  rm /tmp/curl_$xxx.pid
+  $valid_radio && rm /tmp/curl_$xxx.out
+}
+
+get_radio()
+{
+  i=0
+  for url in $@
+  do
+    test_radio "$url"
+    if $valid_radio
+    then
+      ((i++))
+      if [[ $i -eq 1 ]]
+      then
+        echo "$url" > "$file_name"
+      else
+        echo "$url" >> "$file_name"
+      fi
+    else
+      echo "Invalid URL:"
+      echo "$url"
+    fi
+  done
+  if [[ $i -eq 0 ]]
+  then
+    echo "$file_name could not be updated, because all of its urls are invalid."
+  fi
+}
+
 while read station
 do
-  url=$(echo "$station" | cut -d ' ' -f 2)
-  file_name=$(echo "$station" | cut -d ' ' -f 1)
-  if [[ -e ~/tunes/$file_name ]]
-  then
-    url_sha=$(curl -sL "$url" | tr -d '\r' | shasum | cut -d ' ' -f 1)
-    file_sha=$(cat ~/tunes/$file_name | shasum | cut -d ' ' -f 1)
-    if [[ "$url_sha" == "$file_sha" ]]
-    then
-      echo "$file_name is up-to-date"
-    else
-      echo "updating $file_name"
-      cd ~/tunes
-      curl -sL "$url" | tr -d '\r' > "$file_name"
-    fi
-  else
-    echo "getting $file_name"
-    cd ~/tunes
-    curl -sL "$url" | tr -d '\r' > "$file_name"
-  fi
+	url=$(echo "$station" | cut -d ' ' -f 2)
+	file_name=$dir/$(echo "$station" | cut -d ' ' -f 1)
+	if [[ -e "$file_name" ]]
+	then
+		music_urls=$(curl -sL "$url" | tr -d '\r' | grep -o 'http[^;]*')
+		url_sha=$(echo "$music_urls"| shasum | cut -d ' ' -f 1)
+		file_sha=$(cat "$file_name" | shasum | cut -d ' ' -f 1)
+		if [[ "$url_sha" == "$file_sha" ]]
+		then
+			echo "$file_name is up-to-date"
+		else
+      true
+			echo "updating $file_name"
+      get_radio $music_urls
+		fi
+	else
+		echo "getting $file_name"
+    get_radio $music_urls
+	fi
 done < ~/.radio-station-urls
+
