@@ -1,4 +1,6 @@
 #!/bin/bash
+VOLUME=$(mpc volume | cut -d ':' -f 2 | tr -d '%')
+
 echo "press k to increase volume."
 echo "press j to decrease volume."
 echo "press q to quit."
@@ -6,26 +8,46 @@ echo
 
 function changeVolume()
 {
-    local vol
-    vol="$(mpc volume "$1" | grep volume | cut -c 1-13)"
-    echo -ne "\r$vol"
+    green='\e[0;32m'
+    rset='\e[0m' # No Color
+    PROGRESS="[$green"
+    [ $VOLUME -eq $VOLUME ] || VOLUME=0
+    if [ $VOLUME -gt 100 ]
+    then
+      VOLUME=100
+    elif [ $VOLUME -lt 0 ]
+    then
+      VOLUME=0
+    fi
+    progperc=$((VOLUME/5))
+    for i in $(seq 1 $progperc)
+    do
+      PROGRESS="$PROGRESS#"
+    done
+    for i in $(seq $progperc 20)
+    do
+      PROGRESS="$PROGRESS "
+    done
+    PROGRESS="$PROGRESS$rset]"
+    mpc volume $VOLUME >/dev/null 2>&1
+    echo -ne "\rvolume:$VOLUME $PROGRESS"
 }
 
 while true
 do
-    volume="$(mpc volume | cut -d ' ' -f 2 | tr -d '%')"
     read -n 1 key
     if [[ "$key" == "j" ]]
     then
-        ((volume--))
+        ((VOLUME--))
     elif [[ "$key" == "k" ]]
     then
-        ((volume++))
+        ((VOLUME++))
     elif [[ "$key" == 'q' ]]
     then
         echo
         exit 0
     fi
-    changeVolume "$volume"
+    changeVolume
+    echo -ne '           \r'
 done
 
