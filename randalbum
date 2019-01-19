@@ -36,6 +36,7 @@ init(){
       random_artist="$(mpc ls | shuf | head -1)" 
     fi
   fi
+  random_artist=$(mpc ls | grep -i "$random_artist")
   if mpc ls "$random_artist" >/dev/null 2>&1
   then
     true
