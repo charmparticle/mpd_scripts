@@ -69,3 +69,12 @@ Examples:
     $ randalbum -t 'Brian Eno' -s | fadein -lin -m 56 -
     # fade in an internet radio stream, using logarithmic fade-in, to a max volume of 55
     $ playpls -s e24 | fadein -
+
+**mpcplay**
+
+This script simply adds and plays any music uri that is supplied to it. This allows you to set mpd as your default music program.
+
+Example:
+
+    # add a playlist and play it:
+    $ mpcplay $(playpls -s sonic)
