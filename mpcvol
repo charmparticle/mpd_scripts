@@ -11,6 +11,7 @@ function changeVolume()
     green='\e[0;32m'
     rset='\e[0m' # No Color
     PROGRESS="[$green"
+    #loosely check that $VOLUME is an int; if not, make it so.
     [ $VOLUME -eq $VOLUME ] || VOLUME=0
     if [ $VOLUME -gt 100 ]
     then
@@ -22,11 +23,11 @@ function changeVolume()
     progperc=$((VOLUME/5))
     for i in $(seq 1 $progperc)
     do
-      PROGRESS="$PROGRESS#"
+      PROGRESS="$PROGRESS█"
     done
     for i in $(seq $progperc 20)
     do
-      PROGRESS="$PROGRESS "
+      PROGRESS="$PROGRESS▁"
     done
     PROGRESS="$PROGRESS$rset]"
     mpc volume $VOLUME >/dev/null 2>&1
