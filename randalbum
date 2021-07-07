@@ -21,6 +21,7 @@ $0 -sm  select an album using a menu
 $0 --select-album  select an album using a menu
 $0 -sg  select an song using a menu
 $0 --select-song  select an song using a menu
+$0 -g \$pattern add random music matching the given \$pattern, which can be a regular expression.
 $0 -h  shows this help message.
 "
 exit 0
@@ -58,12 +59,16 @@ init(){
   then
     random_album=$(mpc ls "$random_album" | slmenu -i -l 1)
   fi
+  if [[ "$pattern" != "" ]]
+  then
+      random_album="$(mpc listall | egrep -i "$pattern")"
+  fi
   echo "$random_album"
 }
 
 play(){
   mpc clear
-  mpc add "$random_album"
+  echo "$random_album" | mpc add
   mpc play
 }
 
@@ -92,6 +97,15 @@ while [ "$#" -gt 0 ]; do
     -add) 
         add=true
         shift 1
+        ;;
+    -g)
+        if [[ "$#" -gt 1 ]]
+        then
+          pattern="$2"
+        else
+            invalid=true
+        fi
+        shift 2
         ;;
     -t)
         if [[ "$#" -gt 1 ]]
