@@ -5,174 +5,195 @@ invalid=false
 select_artist=false
 select_album=false
 select_song=false
+unrandom_artist=""
+num=1
+i=0
 
 show_help(){
-  echo "usage:
-$0  with no arguments, adds and plays a random album from your music library.
-$0 -a  adds an album to the playlist
-$0 --add  adds an album to the playlist
-$0 -s  chooses a randum album and outputs it. You can add this album with mpc if you wish, by copying and pasting.
-$0 --show  chooses a randum album and outputs it. You can add this album with mpc if you wish, by copying and pasting.
-$0 -t \$artist adds a random album by \$artist
-$0 --artist \$artist adds a random album by \$artist
-$0 -st  select an artist using a menu
-$0 --select-artist  select an artist using a menu
-$0 -sm  select an album using a menu
-$0 --select-album  select an album using a menu
-$0 -sg  select an song using a menu
-$0 --select-song  select an song using a menu
-$0 -g \$pattern add random music matching the given \$pattern, which can be a regular expression.
-$0 -h  shows this help message.
-"
-exit 0
+    echo "usage:
+    $0  with no arguments, adds and plays a random album from your music library.
+    $0 -a  adds an album to the playlist
+    $0 --add  adds an album to the playlist
+    $0 -g \$pattern add random music matching the given \$pattern, which can be a regular expression.
+    $0 -n \$number number of artists, albums, or songs to show or play
+    $0 -s  chooses a randum album and outputs it. You can add this album with mpc if you wish, by copying and pasting.
+    $0 --show  chooses a randum album and outputs it. You can add this album with mpc if you wish, by copying and pasting.
+    $0 -t \$artist adds a random album by \$artist
+    $0 --artist \$artist adds a random album by \$artist
+    $0 -st  select an artist using a menu
+    $0 --select-artist  select an artist using a menu
+    $0 -sm  select an album using a menu
+    $0 --select-album  select an album using a menu
+    $0 -sg  select an song using a menu
+    $0 --select-song  select an song using a menu
+    $0 -h  shows this help message.
+    "
+    exit 0
 }
 
 init(){
-  if [[ "$random_artist" == "" ]]
-  then
-    if $select_artist
+    [[ $i == 5 ]] && echo "tried running, but errored out 5 times in a row. Exiting now" && exit 1
+    if [[ "$unrandom_artist" == "" ]]
     then
-      random_artist="$(mpc ls | slmenu -i -l 1)" 
+        if $select_artist
+        then
+            random_artist="$(mpc ls | slmenu -i -l 1)" 
+        else
+            random_artist="$(mpc ls | shuf | head -1)" 
+        fi
     else
-      random_artist="$(mpc ls | shuf | head -1)" 
+        random_artist=$unrandom_artist
     fi
-  fi
-  random_artist=$(mpc ls | grep -i "$random_artist")
-  if mpc ls "$random_artist" >/dev/null 2>&1
-  then
-    true
-  else
-    echo "Invalid artist: $random_artist"
-    exit 1
-  fi
-  if $select_album
-  then
-    random_album=$(mpc ls "$random_artist" | slmenu -i -l 1) 
-  else
-    random_album=$(mpc ls "$random_artist" | shuf | head -1)
-  fi
-  if [[ "$random_album" == "" ]]
-  then
-    random_album=$random_artist
-  fi
-  if $select_song
-  then
-    random_album=$(mpc ls "$random_album" | slmenu -i -l 1)
-  fi
-  if [[ "$pattern" != "" ]]
-  then
-      random_album="$(mpc listall | egrep -i "$pattern")"
-  fi
-  echo "$random_album"
+    random_artist=$(mpc ls | grep -i "$random_artist")
+    if mpc ls "$random_artist" >/dev/null 2>&1
+    then
+        [[ $i -gt 1 ]] && ((i--))
+    else
+        #echo "Invalid artist: $random_artist"
+        #echo "trying again"
+        ((i++))
+        init
+    fi
+    if $select_album
+    then
+        random_album=$(mpc ls "$random_artist" | slmenu -i -l 1) 
+    else
+        random_album=$(mpc ls "$random_artist" | shuf | head -1)
+    fi
+    if [[ "$random_album" == "" ]]
+    then
+        random_album=$random_artist
+    fi
+    if $select_song
+    then
+        random_album=$(mpc ls "$random_album" | slmenu -i -l 1)
+    fi
+    if [[ "$pattern" != "" ]]
+    then
+        random_album="$(mpc listall | shuf | egrep -i "$pattern" | head -1)"
+    fi
+    echo "$random_album"
 }
 
 play(){
-  mpc clear
-  echo "$random_album" | mpc add
-  mpc play
+    mpc clear
+    echo "$random_album" | mpc add
+    mpc play
 }
 
 main(){
-  $invalid && show_help
-  if $add
-  then
-    init
-    mpc add "$random_album"
-  elif $show
-  then
-    init
-  else
-    init
-    play
-  fi
-  exit
+    $invalid && show_help
+    while [[ $num -ge 1 ]]
+    do
+        if $add
+        then
+            init
+            mpc add "$random_album"
+        elif $show
+        then
+            init
+        else
+            init
+            play
+        fi
+        ((num--))
+    done
 }
 
 while [ "$#" -gt 0 ]; do
-  case "$1" in
-    -a) 
-        add=true
-        shift 1
-        ;;
-    -add) 
-        add=true
-        shift 1
-        ;;
-    -g)
-        if [[ "$#" -gt 1 ]]
-        then
-          pattern="$2"
-        else
+    case "$1" in
+        -a) 
+            add=true
+            shift 1
+            ;;
+        -add) 
+            add=true
+            shift 1
+            ;;
+        -g)
+            if [[ "$#" -gt 1 ]]
+            then
+                pattern="$2"
+            else
+                invalid=true
+            fi
+            shift 2
+            ;;
+        -n)
+            if [[ "$#" -gt 1 ]]
+            then
+                num="$2"
+            else
+                invalid=true
+            fi
+            shift 2
+            ;;
+        -t)
+            if [[ "$#" -gt 1 ]]
+            then
+                unrandom_artist="$2"
+            else
+                invalid=true
+            fi
+            shift 2
+            ;;
+        --artist)
+            if [[ "$#" -gt 1 ]]
+            then
+                unrandom_artist="$2"
+            else
+                invalid=true
+            fi
+            shift 2
+            ;;
+        -sg)
+            select_song=true
+            shift 1
+            ;;
+        --select-song)
+            select_song=true
+            shift 1
+            ;;
+        -sm)
+            select_album=true
+            shift 1
+            ;;
+        --select-album)
+            select_album=true
+            shift 1
+            ;;
+        -st)
+            select_artist=true
+            shift 1
+            ;;
+        --select-artist)
+            select_artist=true
+            shift 1
+            ;;
+        -s)
+            show=true
+            shift 1
+            ;;
+        --show)
+            show=true
+            shift 1
+            ;;
+        -h)
+            show_help
+            shift 1
+            ;;
+        --help)
+            show_help
+            shift 1
+            ;;
+        -*)
             invalid=true
-        fi
-        shift 2
-        ;;
-    -t)
-        if [[ "$#" -gt 1 ]]
-        then
-          random_artist="$2"
-        else
-            invalid=true
-        fi
-        shift 2
-        ;;
-    --artist)
-        if [[ "$#" -gt 1 ]]
-        then
-          random_artist="$2"
-        else
-            invalid=true
-        fi
-        shift 2
-        ;;
-    -sg)
-        select_song=true
-        shift 1
-        ;;
-    --select-song)
-        select_song=true
-        shift 1
-        ;;
-    -sm)
-        select_album=true
-        shift 1
-        ;;
-    --select-album)
-        select_album=true
-        shift 1
-        ;;
-    -st)
-        select_artist=true
-        shift 1
-        ;;
-    --select-artist)
-        select_artist=true
-        shift 1
-        ;;
-    -s)
-        show=true
-        shift 1
-        ;;
-    --show)
-        show=true
-        shift 1
-        ;;
-    -h)
-        show_help
-        shift 1
-        ;;
-    --help)
-        show_help
-        shift 1
-        ;;
-    -*)
-        invalid=true
-        shift 1
-        ;;
-    *) invalid=true
-       shift 1
-       ;;
-  esac
+            shift 1
+            ;;
+        *) invalid=true
+            shift 1
+            ;;
+    esac
 done
 
 main
