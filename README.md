@@ -40,7 +40,8 @@ some scripts for mpd, the music player daemon:
     #play random music that has 'guitar' in the name:
     $ randalbum -g 'guitar'
     #play 5 random pieces of music that have 'guitar' in the name:
-    $ randalbum -g 'guitar' -n 5
+    #worth noting, -n only works with -s or -a
+    $ randalbum -g 'guitar' -s -n 5
     #select an album for a random artist, and play it:
     #(uses slmenu, so you need to have that installed to use this feature)
     $ randalbum --select-album
