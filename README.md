@@ -3,7 +3,7 @@ some scripts for mpd, the music player daemon:
 
 **playpls:**
 
-  requires: [slmenu](https://bitbucket.org/rafaelgg/slmenu). Get that before running this script.
+  requires: [slmenu](https://github.com/joshaw/slmenu). Get that before running this script.
   playpls plays pls or m3u files in your ~/tunes folder. If you don't have a tunes folder, run the update-radio script first.
 
   Examples:
